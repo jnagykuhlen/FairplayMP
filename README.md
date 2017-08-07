@@ -1,4 +1,6 @@
-**Before you start, be aware that the current FairplayMP requires multiple physical/virtual machines to run it.**
+~~**Before you start, be aware that the current FairplayMP requires multiple physical/virtual machines to run it.**~~
+
+**Updated by Jonas Nagy-Kuhlen in this fork:** FairplayMP now allows multiple instances on the local machine. See modified ``config.xml`` for usage information. Note that this fork ignores SSL certificates and communicates over a plain TCP connection to simplify testing.
 
 Reference: [[Readme](http://www.cs.huji.ac.il/project/Fairplay/FairplayMP/Readme.txt)]
 
