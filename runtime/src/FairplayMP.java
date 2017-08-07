@@ -25,7 +25,7 @@ import players.*;
 // Main program.
 public class FairplayMP {
 	
-	static double _version = 1.1; 
+	static double _version = 1.11; 
 		
 	static Thread _ipThread = null; 
 	static Thread _cpThread = null; 
@@ -36,7 +36,7 @@ public class FairplayMP {
 	static ConfigFile _conf = null;
 	static Circuit _cir = null;
 	static String _name;
-	static String _ip;
+	static String _ipEndPoint;
 	static BigInteger _MOD = null;
 	
 	public static void main(String[] args) {
@@ -55,25 +55,22 @@ public class FairplayMP {
 	}
 
 	private static void parseArgs(String[] args) {
-		if (args.length == 1) {
-			return;
-		}
-		if ((args.length == 2) && args[1].equals("-v")) {
-			Utils.v = true;
-			return;
-		}		
-		if ((args.length == 3) && args[1].equals("Test")) {
-			Utils.v = true;
-			InputPlayer._injectedInput = new BigInteger(args[2]);
-			return;
-		}
-
-		Utils.printErr("Usage (version " + _version + "): FairplayMP <random seed> [-v]");
+            if(args.length >= 3 && args.length <= 4) {
+                _name = args[1];
+                InputPlayer._injectedInput = new BigInteger(args[2]);
+                
+                if ((args.length == 4) && args[3].equals("-v"))
+                    Utils.v = true;
+            } else {
+		Utils.printErr("Usage (version " + _version + "): FairplayMP <random seed> <player name> <player input> [-v]");
+            }
 	}
 
 	protected static void init(String seed) {
-		getIPAddress();		
+		// getIPAddress();
 		
+                Utils.printMsg("Initializing...");
+                
 		Vector<SortedMap<String, Msg>> msgs = 
 			new Vector<SortedMap<String, Msg>>();
 		for (int i = 0 ; i < 8 ; i++) {
@@ -84,11 +81,27 @@ public class FairplayMP {
 			_conf = new XMLParser("config.xml");
 		_cir = new SHDLCircuitCnv(_conf.getCircuit());
 		BigInteger MOD = _conf.getModulo();
-
-		int port = _conf.getPort();
+                
+                Hashtable<String, String> Players = _conf.getPlayers();
+		// getName(Players);
+                
+                _ipEndPoint = Players.get(_name);
+                
+                if(_ipEndPoint == null)
+                    Utils.printErr("Player <" + _name + "> is not part of the computation.");
+                
+                String[] ipEndPointParts = _ipEndPoint.split(":");
+                
+                if(ipEndPointParts.length != 2)
+                    Utils.printErr("<" + _ipEndPoint + "> is not a valid IP endpoint.");
+                
+                /*
+                if(ipEndPointParts[0] != _ip)
+                    Utils.printErr("IP of player name does not match this machine's IP address.");
+                */
+                
+		int port = Integer.parseInt(ipEndPointParts[1]);
 		_server = new Thread(new Server(msgs, port));		
-		Hashtable<String, String> Players = _conf.getPlayers();
-		getName(Players);
 		
 		_CP = _conf.getCP();
 		Arrays.sort(_CP);
@@ -97,17 +110,21 @@ public class FairplayMP {
 			Utils.printErr("The number of CP players should be odd");
 		}
 		
-		initSSL();
+		// initSSL();
 		CPMsgs.init(n);
 		PRG.init(seed.getBytes(), MOD, _conf.getPRGProtocol());
 		String[] lambdas = _conf.getLambdas();				
 
 		BGW.init(MOD, n, lambdas);
-		Client.init(Players, _CP, _cir.getResultPlayers(), port);
+		Client.init(Players, _CP, _cir.getResultPlayers(), _ipEndPoint);
 		Player.init(_name, _cir, _conf, msgs, n);
+                
+                Utils.printMsg("Initializing done.");
 	}
 
 	protected static void runPlayers() {
+                Utils.printMsg("Running players...");
+            
 		String[] IP = _cir.getInputPlayers();
 		String[] RP = _cir.getResultPlayers();
 		int id;
@@ -117,7 +134,7 @@ public class FairplayMP {
 			_ipThread.start();
 		}
 		
-		if ((id = isIn(_ip, _CP)) != -1) {
+		if ((id = isIn(_ipEndPoint, _CP)) != -1) {
 			_cpThread = new Thread(new ComputationPlayer(id, RP)); 
 			_cpThread.start();
 			_server.start();
@@ -128,11 +145,15 @@ public class FairplayMP {
 			_rpThread.start();
 			if (id == -1)
 				_server.start();
-		}	
+		}
+                
+                Utils.printMsg("Running players done.");
 	}
 
-	protected static void waitForPlayers() {		
-		try {
+	protected static void waitForPlayers() {
+                Utils.printMsg("Waiting for players...");
+		
+                try {
 			if (_ipThread != null)
 				_ipThread.join();
 						
@@ -144,9 +165,12 @@ public class FairplayMP {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			System.exit(1);
-		}				
+		}
+                
+                Utils.printMsg("Waiting for players done.");
 	}
 	
+        /*
 	protected static void getIPAddress() {
 		try {
 			_ip = InetAddress.getLocalHost().getHostAddress().trim();
@@ -171,6 +195,7 @@ public class FairplayMP {
 			}
 		}
 	}
+        */
 	
 	protected static int isIn(String s, String[] sArray) {
 		if (s == null)
@@ -183,6 +208,7 @@ public class FairplayMP {
 		return -1;
 	}
 	
+        /*
 	protected static void initSSL() {
 		System.setProperty("javax.net.ssl.keyStore", _conf.getKeyStore());
 		System.setProperty("javax.net.ssl.keyStorePassword",
@@ -191,4 +217,5 @@ public class FairplayMP {
 		System.setProperty("javax.net.ssl.trustStorePassword", 
 				_conf.getTrustStorePassword());
 	}
+        */
 }

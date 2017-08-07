@@ -81,6 +81,7 @@ public abstract class Player implements Runnable {
 		SortedMap<String, Msg> msgs = _msgs.elementAt(i); 
 		synchronized(msgs){
 			while (msgs.size() != size){
+                                Utils.printMsg("Messages size is " + msgs.size() + ", " + size + " required. Waiting...");
 				try {
 					msgs.wait();
 				} catch (InterruptedException e) {
@@ -93,8 +94,11 @@ public abstract class Player implements Runnable {
 	}
 	
 	protected void parseMsg(int msgID, MsgParser mp){
+                Utils.printMsg("Waiting for msg " + msgID + "...");
 		waitForMsgs(msgID);
+                Utils.printMsg("Parsing msg " + msgID + "...");
 		mp.parseMsg(_msgs.elementAt(msgID));
+                Utils.printMsg("Parsing msg " + msgID + " done.");
 		//System.err.println("Parsed " + msgID);
 	}
 	

@@ -59,7 +59,7 @@ public class Msg {
 		for (BigInteger data : _msg) {
 			bm.addData(ByteString.copyFrom(data.toByteArray()));
 		}
-		_msg = null;
+		// _msg = null;
 		return bm.build();
 	}
 	

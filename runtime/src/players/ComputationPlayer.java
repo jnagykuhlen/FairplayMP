@@ -136,7 +136,7 @@ public class ComputationPlayer extends Player {
 			//System.out.println("basic" + ":" + _lambda[w]);
 			msg2.append(_lambda[w].multiply(_lambda[w]).mod(_MOD));
 		}
-			 
+                
 		_client.sendToCP(msg2);
 	}
 

@@ -6,14 +6,17 @@
 
 package communication;
 
+import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.SortedMap;
 import java.util.Vector;
+import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocketFactory;
 
 import communication.Messages.BasicMsg;
+import java.nio.charset.Charset;
 
 //import javax.net.ssl.SSLServerSocketFactory;
 
@@ -40,21 +43,35 @@ public class Server implements Runnable{
 	    
 	    try{
 	    	
-			serversocket = 
-				SSLServerSocketFactory.getDefault().createServerSocket(_port);		
-
+			//serversocket = SSLServerSocketFactory.getDefault().createServerSocket(_port);
+                        serversocket = ServerSocketFactory.getDefault().createServerSocket(_port);
+                        
+                        Utils.printMsg("Server is running at port <" + _port + ">.");
+                        
 			while (true) {
-		        _connection = serversocket.accept();
-		        if (_connection == null)
-		        	return;
-		        
-		        // push the message into the queue.
-				synchronized (_msgQ){
-					String ip = _connection.getInetAddress().getHostAddress();
-					Msg msg = new Msg(BasicMsg.parseFrom(_connection.getInputStream()));
-					_msgQ.add(new MsgPair(msg, ip));
-					_msgQ.notifyAll();
-				}
+                            _connection = serversocket.accept();
+                            if (_connection == null)
+                                    return;
+
+                            Utils.printMsg("Accepted client at <" + _connection.getRemoteSocketAddress() + ">.");
+                            // push the message into the queue.
+                            synchronized (_msgQ){
+                                    // String ip = _connection.getInetAddress().getHostAddress();
+                                    InputStream inputStream = _connection.getInputStream();
+                                    
+                                    int remoteIpEndPointLength = inputStream.read();
+                                    byte[] remoteIpEndPointData = new byte[remoteIpEndPointLength];
+                                    
+                                    inputStream.read(remoteIpEndPointData);
+                                            
+                                    String remoteIpEndPoint = new String(remoteIpEndPointData, Charset.forName("US-ASCII"));
+                                    
+                                    Msg msg = new Msg(BasicMsg.parseFrom(_connection.getInputStream()));
+                                    _msgQ.add(new MsgPair(msg, remoteIpEndPoint));
+                                    _msgQ.notifyAll();
+                                    
+                                    Utils.printMsg("Received msg " + msg.getID() + ".");
+                            }
 			}
 	    }
 	    catch (Exception e) {
